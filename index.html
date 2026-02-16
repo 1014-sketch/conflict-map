@@ -827,7 +827,7 @@
                 if (map.current) return;
 
                 // Mapboxアクセストークン
-                mapboxgl.accessToken = 'pk.eyJ1IjoieXV1czI0IiwiYSI6ImNtbGpkNnZndzBjc3kzZ29kcGJieGM1amwifQ.D_MBoSrs0EYhqk13xiRBxg';
+                mapboxgl.accessToken = window.MAPBOX_TOKEN || 'pk.eyJ1IjoieXV1czI0IiwiYSI6ImNtbGpkNnZndzBjc3kzZ29kcGJieGM1amwifQ.D_MBoSrs0EYhqk13xiRBxg';
 
                 map.current = new mapboxgl.Map({
                     container: mapContainer.current,
