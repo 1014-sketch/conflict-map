@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>世界紛争マップ</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #0a0e27;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        #root {
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh; /* モバイルブラウザ対応 */
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .header {
+            background: rgba(10, 14, 39, 0.95);
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            z-index: 2;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .header-text {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .filter-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            padding: 6px 12px;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 120px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 16px;
+            padding-right: 32px;
+        }
+
+        .filter-select:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .filter-select option {
+            background: #1a1f3a;
+            color: #fff;
+            padding: 8px;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+
+        .refresh-btn.loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .stats {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(10, 14, 39, 0.95);
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            z-index: 1;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .stats-number {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            margin-right: 4px;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(10, 14, 39, 0.95);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            z-index: 1;
+            max-width: calc(100vw - 40px);
+            transition: all 0.3s ease;
+        }
+        
+        /* モバイル用：コンパクトな凡例 */
+        @media (max-width: 767px) {
+            .legend {
+                bottom: 80px;
+                right: 10px;
+                padding: 0;
+                border: none;
+                background: transparent;
+                backdrop-filter: none;
+            }
+            
+            .legend.collapsed .legend-content {
+                display: none;
+            }
+            
+            .legend.collapsed .legend-toggle {
+                background: rgba(10, 14, 39, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .legend:not(.collapsed) .legend-toggle {
+                display: none;
+            }
+            
+            .legend:not(.collapsed) .legend-content {
+                background: rgba(10, 14, 39, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                backdrop-filter: blur(10px);
+                padding: 12px;
+                border-radius: 10px;
+            }
+        }
+        
+        .legend-toggle {
+            display: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(10, 14, 39, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.2s;
+        }
+        
+        @media (max-width: 767px) {
+            .legend.collapsed .legend-toggle {
+                display: flex;
+            }
+        }
+        
+        .legend-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .legend h3 {
+            font-size: 13px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        @media (max-width: 767px) {
+            .legend h3 {
+                font-size: 12px;
+                margin-bottom: 8px;
+            }
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+        
+        @media (max-width: 767px) {
+            .legend-item {
+                font-size: 11px;
+                margin-bottom: 5px;
+            }
+        }
+
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        
+        @media (max-width: 767px) {
+            .legend-color {
+                width: 12px;
+                height: 12px;
+                margin-right: 6px;
+            }
+        }
+        
+        .legend-close {
+            display: none;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }
+        
+        @media (max-width: 767px) {
+            .legend:not(.collapsed) .legend-close {
+                display: block;
+            }
+        }
+        
+        .legend-close:active {
+            color: rgba(255, 255, 255, 1);
+        }
+
+        #map {
+            flex: 1;
+            width: 100%;
+            touch-action: none; /* タッチ操作を最適化 */
+            cursor: grab; /* ドラッグ可能であることを示す */
+        }
+
+        #map:active {
+            cursor: grabbing; /* ドラッグ中のカーソル */
+        }
+
+        /* ナビゲーションコントロールのスタイル調整 */
+        .mapboxgl-ctrl-top-right {
+            top: 80px;
+            right: 20px;
+        }
+
+        .mapboxgl-ctrl-group {
+            background: rgba(10, 14, 39, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .mapboxgl-ctrl-group button {
+            background-color: transparent;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .mapboxgl-ctrl-group button + button {
+            border-top-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .mapboxgl-ctrl button.mapboxgl-ctrl-zoom-in .mapboxgl-ctrl-icon,
+        .mapboxgl-ctrl button.mapboxgl-ctrl-zoom-out .mapboxgl-ctrl-icon,
+        .mapboxgl-ctrl button.mapboxgl-ctrl-compass .mapboxgl-ctrl-icon {
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+
+        .mapboxgl-ctrl-group button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .mapboxgl-popup {
+            max-width: none !important;
+        }
+        
+        .mapboxgl-popup-content {
+            background: rgba(10, 14, 39, 0.98);
+            color: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            max-width: 320px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        }
+        
+        /* モバイル専用の最適化 */
+        @media (max-width: 767px) {
+            .mapboxgl-popup-content {
+                max-width: 280px;
+                max-height: 65vh;
+                overflow-y: auto;
+                padding: 14px;
+            }
+            
+            /* スクロールバーのスタイル */
+            .mapboxgl-popup-content::-webkit-scrollbar {
+                width: 4px;
+            }
+            
+            .mapboxgl-popup-content::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 2px;
+            }
+        }
+
+        .mapboxgl-popup-close-button {
+            color: #fff;
+            font-size: 22px;
+            padding: 4px 8px;
+            line-height: 1;
+            width: 30px;
+            height: 30px;
+            right: 6px;
+            top: 6px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        
+        /* モバイルで閉じるボタンを少し大きく */
+        @media (max-width: 767px) {
+            .mapboxgl-popup-close-button {
+                font-size: 24px;
+                width: 34px;
+                height: 34px;
+            }
+        }
+
+        .mapboxgl-popup-close-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .popup-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.3;
+            padding-right: 20px;
+        }
+
+        .popup-location {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 8px;
+        }
+
+        .popup-severity {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .popup-description {
+            font-size: 13px;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 8px;
+        }
+
+        .popup-date {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .popup-meta {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 6px;
+        }
+        
+        .article-link-button {
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin-top: 10px;
+            padding: 10px 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+        
+        /* モバイルでボタンを少し大きく */
+        @media (max-width: 767px) {
+            .article-link-button {
+                padding: 12px 16px;
+                font-size: 14px;
+            }
+        }
+        
+        .article-link-button:active {
+            transform: scale(0.97);
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+        }
+
+        .marker {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .marker:active {
+            transform: scale(1.2);
+        }
+
+        .marker-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        /* タブレット対応 */
+        @media (min-width: 768px) {
+            .header {
+                padding: 20px 30px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+                margin-bottom: 8px;
+            }
+
+            .header p {
+                font-size: 14px;
+            }
+
+            .stats {
+                top: 90px;
+            }
+
+            .legend {
+                bottom: 30px;
+                right: 30px;
+                padding: 20px;
+            }
+
+            .legend h3 {
+                font-size: 14px;
+                margin-bottom: 12px;
+            }
+
+            .legend-item {
+                font-size: 13px;
+                margin-bottom: 8px;
+            }
+
+            .legend-color {
+                width: 16px;
+                height: 16px;
+                margin-right: 10px;
+            }
+
+            .mapboxgl-popup-content {
+                min-width: 280px;
+                padding: 16px;
+            }
+
+            .popup-title {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+
+            .popup-location {
+                font-size: 13px;
+                margin-bottom: 12px;
+            }
+
+            .popup-severity {
+                font-size: 12px;
+                margin-bottom: 12px;
+            }
+
+            .popup-date {
+                font-size: 12px;
+            }
+
+            .marker:hover {
+                transform: scale(1.3);
+            }
+        }
+
+        /* デスクトップ対応 */
+        @media (min-width: 1024px) {
+            .legend {
+                max-width: 300px;
+            }
+        }
+
+        /* 小さなスマホ対応 */
+        @media (max-width: 360px) {
+            .header h1 {
+                font-size: 18px;
+            }
+
+            .header p {
+                font-size: 12px;
+            }
+
+            .legend {
+                bottom: 15px;
+                right: 15px;
+                padding: 12px;
+            }
+
+            .legend h3 {
+                font-size: 12px;
+            }
+
+            .legend-item {
+                font-size: 11px;
+            }
+
+            .popup-title {
+                font-size: 14px;
+            }
+        }
+
+        /* ランドスケープモード（横向き）対応 */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .header {
+                padding: 12px 20px;
+            }
+
+            .header h1 {
+                font-size: 16px;
+                margin-bottom: 2px;
+            }
+
+            .header p {
+                font-size: 11px;
+            }
+
+            .legend {
+                bottom: 10px;
+                right: 10px;
+                padding: 10px;
+                font-size: 11px;
+            }
+
+            .legend h3 {
+                font-size: 11px;
+                margin-bottom: 6px;
+            }
+
+            .legend-item {
+                font-size: 10px;
+                margin-bottom: 4px;
+            }
+
+            .legend-color {
+                width: 12px;
+                height: 12px;
+                margin-right: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // イベントカテゴリの定義
+        const categories = {
+            all: 'すべて',
+            conflict: '武力紛争',
+            protest: '抗議・デモ',
+            political: '政治的緊張',
+            humanitarian: '人道危機',
+            diplomatic: '外交問題'
+        };
+
+        const severityColors = {
+            critical: '#ff0040',
+            high: '#ff6b00',
+            medium: '#ffc107',
+            low: '#4caf50'
+        };
+
+        const severityLabels = {
+            critical: '緊急',
+            high: '高',
+            medium: '中',
+            low: '低'
+        };
+
+        // バックエンドAPIからニュースを取得
+        async function fetchGDELTEvents() {
+            try {
+                console.log('📡 Fetching news from backend server...');
+                
+                // ローカル開発環境ではlocalhost、本番ではVercel等のURL
+                const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                    ? 'http://localhost:3000/api/events'
+                    : '/api/events'; // 本番環境（Vercel Functions等）
+                
+                console.log(`🔗 API URL: ${API_URL}`);
+                
+                const response = await fetch(API_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.events) {
+                    console.log(`✅ Received ${data.events.length} events from backend`);
+                    console.log(`📅 Last updated: ${data.lastUpdated}`);
+                    return data.events;
+                } else {
+                    throw new Error('Invalid response format');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error fetching from backend:', error);
+                console.error('💡 Make sure backend server is running on http://localhost:3000');
+                console.error('   Run: npm install && npm start');
+                return []; // エラー時は空配列
+            }
+        }
+        
+        // 日付を相対的な表記に変換（例: "今日", "1日前", "2026-02-10"）
+        function formatRelativeDate(dateString) {
+            const eventDate = new Date(dateString);
+            const today = new Date();
+            
+            // 時刻を00:00:00にリセットして日数計算
+            eventDate.setHours(0, 0, 0, 0);
+            today.setHours(0, 0, 0, 0);
+            
+            const diffTime = today - eventDate;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return '今日';
+            if (diffDays === 1) return '昨日';
+            if (diffDays === 2) return '2日前';
+            if (diffDays === 3) return '3日前';
+            if (diffDays <= 7) return `${diffDays}日前`;
+            
+            // 7日以上前は日付そのまま
+            return dateString;
+        }
+
+        function ConflictMap() {
+            const mapContainer = useRef(null);
+            const map = useRef(null);
+            const markers = useRef([]);
+            const [loaded, setLoaded] = useState(false);
+            const [events, setEvents] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [categoryFilter, setCategoryFilter] = useState('all');
+            const [severityFilter, setSeverityFilter] = useState('all');
+            const [legendCollapsed, setLegendCollapsed] = useState(true); // モバイルではデフォルトで閉じる
+
+            // フィルタリングされたイベント
+            const filteredEvents = events.filter(event => {
+                const categoryMatch = categoryFilter === 'all' || event.category === categoryFilter;
+                const severityMatch = severityFilter === 'all' || event.severity === severityFilter;
+                return categoryMatch && severityMatch;
+            });
+
+            // 過去のイベントを蓄積（最大20件）
+            const eventHistory = useRef([]);
+            
+            // イベントデータを取得
+            const loadEvents = async () => {
+                setLoading(true);
+                console.log('Loading events...');
+                try {
+                    const newData = await fetchGDELTEvents();
+                    console.log('New events loaded:', newData.length, 'events');
+                    
+                    // 新しいイベントを履歴に追加（タイトル+URLで重複を避ける）
+                    const existingKeys = new Set(
+                        eventHistory.current.map(e => `${e.title}-${e.articleUrl}`)
+                    );
+                    const uniqueNewEvents = newData.filter(e => 
+                        !existingKeys.has(`${e.title}-${e.articleUrl}`)
+                    );
+                    
+                    console.log(`🆕 New unique events: ${uniqueNewEvents.length}`);
+                    
+                    // 履歴を更新（新しいイベントを先頭に追加）
+                    eventHistory.current = [...uniqueNewEvents, ...eventHistory.current];
+                    
+                    // 最大20件に制限
+                    if (eventHistory.current.length > 20) {
+                        const removed = eventHistory.current.length - 20;
+                        eventHistory.current = eventHistory.current.slice(0, 20);
+                        console.log(`🗑️ Removed ${removed} old events`);
+                    }
+                    
+                    // IDを再採番（履歴全体で一意にする）
+                    eventHistory.current = eventHistory.current.map((event, index) => ({
+                        ...event,
+                        id: index + 1
+                    }));
+                    
+                    console.log(`📚 Total events in history: ${eventHistory.current.length}`);
+                    console.log(`🗺️ Displaying all ${eventHistory.current.length} events on map`);
+                    
+                    // 履歴の全イベントを表示
+                    setEvents(eventHistory.current);
+                } catch (error) {
+                    console.error('イベントの取得に失敗しました:', error);
+                    // エラー時も既存の履歴は保持
+                    if (eventHistory.current.length > 0) {
+                        console.log(`📋 Keeping existing ${eventHistory.current.length} events`);
+                        setEvents(eventHistory.current);
+                    }
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => {
+                if (map.current) return;
+
+                // Mapboxアクセストークン
+                mapboxgl.accessToken = 'pk.eyJ1IjoieXV1czI0IiwiYSI6ImNtbGpkNnZndzBjc3kzZ29kcGJieGM1amwifQ.D_MBoSrs0EYhqk13xiRBxg';
+
+                map.current = new mapboxgl.Map({
+                    container: mapContainer.current,
+                    style: 'mapbox://styles/mapbox/dark-v11',
+                    center: [40, 25],
+                    zoom: window.innerWidth < 768 ? 1.8 : 2.2,
+                    projection: 'globe', // 地球儀に戻す
+                    attributionControl: false,
+                    dragRotate: false,
+                    touchZoomRotate: true,
+                    touchPitch: false,
+                    fadeDuration: 0,
+                    pitchWithRotate: false,
+                    dragPan: true,
+                    keyboard: true,
+                    doubleClickZoom: true,
+                    scrollZoom: false,
+                    boxZoom: false,
+                    renderWorldCopies: true,
+                    trackResize: true,
+                    bearingSnap: 0
+                });
+
+                map.current.on('load', () => {
+                    setLoaded(true);
+                    
+                    map.current.addControl(new mapboxgl.NavigationControl({
+                        showCompass: false,
+                        showZoom: true,
+                        visualizePitch: false
+                    }), 'top-right');
+                    
+                    // 地球儀の霧効果を戻す
+                    map.current.setFog({
+                        color: 'rgb(186, 210, 235)',
+                        'high-color': 'rgb(36, 92, 223)',
+                        'horizon-blend': 0.02,
+                        'space-color': 'rgb(11, 11, 25)',
+                        'star-intensity': 0.6
+                    });
+                    
+                    // ドラッグの慣性を強化
+                    map.current.dragPan.enable({
+                        linearity: 0.3,
+                        easing: t => t * (2 - t),
+                        maxSpeed: 1400,
+                        deceleration: 2500
+                    });
+                    
+                    // カスタムホイールハンドラー
+                    const mapElement = mapContainer.current;
+                    mapElement.addEventListener('wheel', (e) => {
+                        // ctrlKey（Macでは⌘）が押されている、またはピンチジェスチャーの場合はズーム
+                        if (e.ctrlKey || e.metaKey) {
+                            e.preventDefault();
+                            const zoom = map.current.getZoom();
+                            const delta = -e.deltaY / 100; // ズーム量を調整
+                            map.current.zoomTo(zoom + delta, {
+                                duration: 0
+                            });
+                            return;
+                        }
+                        
+                        e.preventDefault();
+                        
+                        const center = map.current.getCenter();
+                        const zoom = map.current.getZoom();
+                        
+                        // スクロール量に基づいて移動距離を計算
+                        const panFactor = 0.5 / Math.pow(2, zoom);
+                        
+                        // 縦スクロール（主）と横スクロール（Shift押下時）に対応
+                        const deltaX = e.shiftKey ? e.deltaY * panFactor : e.deltaX * panFactor;
+                        const deltaY = e.shiftKey ? 0 : e.deltaY * panFactor;
+                        
+                        map.current.panTo([
+                            center.lng + deltaX,
+                            center.lat - deltaY
+                        ], {
+                            duration: 0
+                        });
+                    }, { passive: false });
+                    
+                    // 初回イベント読み込み
+                    loadEvents();
+                    
+                    console.log('Map loaded, loading events...');
+                    
+                    // 15分ごとに自動更新
+                    const autoRefreshInterval = setInterval(() => {
+                        console.log('🔄 Auto-refreshing events (every 15 minutes)...');
+                        loadEvents();
+                    }, 15 * 60 * 1000); // 15分 = 900,000ミリ秒
+                    
+                    // クリーンアップ時に間隔タイマーをクリア
+                    return () => clearInterval(autoRefreshInterval);
+                });
+
+                return () => {
+                    if (map.current) {
+                        map.current.remove();
+                    }
+                };
+            }, []);
+
+            // フィルター変更時にマーカーを更新
+            useEffect(() => {
+                if (!loaded || !map.current) return;
+
+                console.log('Updating markers. Filtered events:', filteredEvents.length);
+
+                // 既存のマーカーをクリア
+                markers.current.forEach(marker => marker.remove());
+                markers.current = [];
+
+                // フィルタリングされたイベントにマーカーを追加
+                filteredEvents.forEach(event => {
+                    console.log('Creating marker for:', event.title, 'at [lng:', event.lng, ', lat:', event.lat, ']');
+                    
+                    // マーカー要素を作成
+                    const el = document.createElement('div');
+                    
+                    // 適切なマーカーサイズ
+                    const isMobile = window.innerWidth < 768;
+                    const criticalSize = isMobile ? 32 : 28;
+                    const normalSize = isMobile ? 26 : 22;
+                    const size = event.severity === 'critical' ? criticalSize : normalSize;
+                    
+                    Object.assign(el.style, {
+                        width: size + 'px',
+                        height: size + 'px',
+                        backgroundColor: severityColors[event.severity],
+                        borderRadius: '50%',
+                        border: '2px solid white',
+                        cursor: 'pointer',
+                        boxShadow: `0 0 15px ${severityColors[event.severity]}`,
+                        transition: 'transform 0.2s'
+                    });
+                    
+                    console.log('Marker element created with size:', size);
+
+                    // ポップアップを作成（レスポンシブ対応）
+                    const popup = new mapboxgl.Popup({ 
+                        offset: 30,
+                        closeButton: true,
+                        closeOnClick: false,
+                        maxWidth: isMobile ? '280px' : '320px'
+                    }).setHTML(`
+                        <div class="popup-title">${event.title}</div>
+                        <div class="popup-location">📍 ${event.location}</div>
+                        <div class="popup-severity" style="background: ${severityColors[event.severity]}">
+                            ${severityLabels[event.severity]}
+                        </div>
+                        <div class="popup-description">${event.description}</div>
+                        <div class="popup-meta">
+                            ${categories[event.category]} • ${event.sources}件
+                        </div>
+                        <div class="popup-date">📅 ${formatRelativeDate(event.date)}</div>
+                        ${event.articleUrl ? `
+                            <a href="${event.articleUrl}" 
+                               target="_blank" 
+                               rel="noopener noreferrer" 
+                               class="article-link-button"
+                               onclick="event.stopPropagation();">
+                                📰 記事を読む
+                            </a>
+                        ` : ''}
+                    `);
+
+                    // Mapboxマーカーを作成
+                    try {
+                        const marker = new mapboxgl.Marker(el)
+                            .setLngLat([event.lng, event.lat])
+                            .setPopup(popup)
+                            .addTo(map.current);
+
+                        console.log('Marker successfully added');
+                        markers.current.push(marker);
+                    } catch (error) {
+                        console.error('Error creating marker:', error);
+                    }
+                });
+                
+                console.log('Total markers created:', markers.current.length);
+            }, [loaded, filteredEvents]);
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <div className="header-content">
+                            <div className="header-text">
+                                <h1>🌍 世界紛争リアルタイムマップ</h1>
+                                <p>世界各地の紛争・危機をリアルタイムで可視化</p>
+                            </div>
+                            <div className="filters">
+                                <div className="filter-group">
+                                    <label className="filter-label">カテゴリ</label>
+                                    <select 
+                                        className="filter-select"
+                                        value={categoryFilter}
+                                        onChange={(e) => setCategoryFilter(e.target.value)}
+                                    >
+                                        {Object.entries(categories).map(([key, label]) => (
+                                            <option key={key} value={key}>{label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="filter-group">
+                                    <label className="filter-label">深刻度</label>
+                                    <select 
+                                        className="filter-select"
+                                        value={severityFilter}
+                                        onChange={(e) => setSeverityFilter(e.target.value)}
+                                    >
+                                        <option value="all">すべて</option>
+                                        <option value="critical">緊急</option>
+                                        <option value="high">高</option>
+                                        <option value="medium">中</option>
+                                        <option value="low">低</option>
+                                    </select>
+                                </div>
+                                <button 
+                                    className={`refresh-btn ${loading ? 'loading' : ''}`}
+                                    onClick={loadEvents}
+                                    disabled={loading}
+                                >
+                                    <span>{loading ? '🔄' : '🔃'}</span>
+                                    {loading ? '更新中...' : '更新'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div ref={mapContainer} id="map" />
+                    {loaded && (
+                        <div className="stats">
+                            <span className="stats-number">{filteredEvents.length}</span>
+                            件のイベント
+                        </div>
+                    )}
+                    <div className={`legend ${legendCollapsed ? 'collapsed' : ''}`}>
+                        <button 
+                            className="legend-toggle"
+                            onClick={() => setLegendCollapsed(false)}
+                            aria-label="凡例を開く"
+                        >
+                            ℹ️
+                        </button>
+                        <div className="legend-content">
+                            <button 
+                                className="legend-close"
+                                onClick={() => setLegendCollapsed(true)}
+                                aria-label="凡例を閉じる"
+                            >
+                                ×
+                            </button>
+                            <h3>深刻度</h3>
+                            <div className="legend-item">
+                                <div className="legend-color" style={{background: severityColors.critical}}></div>
+                                緊急 - 即座の対応が必要
+                            </div>
+                            <div className="legend-item">
+                                <div className="legend-color" style={{background: severityColors.high}}></div>
+                                高 - 深刻な状況
+                            </div>
+                            <div className="legend-item">
+                                <div className="legend-color" style={{background: severityColors.medium}}></div>
+                                中 - 注視が必要
+                            </div>
+                            <div className="legend-item">
+                                <div className="legend-color" style={{background: severityColors.low}}></div>
+                                低 - 安定傾向
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ConflictMap />);
+    </script>
+</body>
+</html>
