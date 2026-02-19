@@ -26,7 +26,7 @@
         #root {
             width: 100vw;
             height: 100vh;
-            height: 100dvh; /* モバイルブラウザ対応 */
+            height: 100dvh;
         }
 
         .container {
@@ -190,7 +190,6 @@
             transition: all 0.3s ease;
         }
         
-        /* モバイル用：コンパクトな凡例 */
         @media (max-width: 767px) {
             .legend {
                 bottom: 80px;
@@ -322,15 +321,14 @@
         #map {
             flex: 1;
             width: 100%;
-            touch-action: none; /* タッチ操作を最適化 */
-            cursor: grab; /* ドラッグ可能であることを示す */
+            touch-action: none;
+            cursor: grab;
         }
 
         #map:active {
-            cursor: grabbing; /* ドラッグ中のカーソル */
+            cursor: grabbing;
         }
 
-        /* ナビゲーションコントロールのスタイル調整 */
         .mapboxgl-ctrl-top-right {
             top: 80px;
             right: 20px;
@@ -375,7 +373,6 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
         }
         
-        /* モバイル専用の最適化 */
         @media (max-width: 767px) {
             .mapboxgl-popup-content {
                 max-width: 280px;
@@ -384,7 +381,6 @@
                 padding: 14px;
             }
             
-            /* スクロールバーのスタイル */
             .mapboxgl-popup-content::-webkit-scrollbar {
                 width: 4px;
             }
@@ -408,7 +404,6 @@
             border-radius: 4px;
         }
         
-        /* モバイルで閉じるボタンを少し大きく */
         @media (max-width: 767px) {
             .mapboxgl-popup-close-button {
                 font-size: 24px;
@@ -482,7 +477,6 @@
             border: none;
         }
         
-        /* モバイルでボタンを少し大きく */
         @media (max-width: 767px) {
             .article-link-button {
                 padding: 12px 16px;
@@ -504,161 +498,9 @@
             transform: scale(1.2);
         }
 
-        .marker-pulse {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.7;
-            }
-        }
-
-        /* タブレット対応 */
         @media (min-width: 768px) {
-            .header {
-                padding: 20px 30px;
-            }
-
-            .header h1 {
-                font-size: 24px;
-                margin-bottom: 8px;
-            }
-
-            .header p {
-                font-size: 14px;
-            }
-
-            .stats {
-                top: 90px;
-            }
-
-            .legend {
-                bottom: 30px;
-                right: 30px;
-                padding: 20px;
-            }
-
-            .legend h3 {
-                font-size: 14px;
-                margin-bottom: 12px;
-            }
-
-            .legend-item {
-                font-size: 13px;
-                margin-bottom: 8px;
-            }
-
-            .legend-color {
-                width: 16px;
-                height: 16px;
-                margin-right: 10px;
-            }
-
-            .mapboxgl-popup-content {
-                min-width: 280px;
-                padding: 16px;
-            }
-
-            .popup-title {
-                font-size: 16px;
-                margin-bottom: 8px;
-            }
-
-            .popup-location {
-                font-size: 13px;
-                margin-bottom: 12px;
-            }
-
-            .popup-severity {
-                font-size: 12px;
-                margin-bottom: 12px;
-            }
-
-            .popup-date {
-                font-size: 12px;
-            }
-
             .marker:hover {
                 transform: scale(1.3);
-            }
-        }
-
-        /* デスクトップ対応 */
-        @media (min-width: 1024px) {
-            .legend {
-                max-width: 300px;
-            }
-        }
-
-        /* 小さなスマホ対応 */
-        @media (max-width: 360px) {
-            .header h1 {
-                font-size: 18px;
-            }
-
-            .header p {
-                font-size: 12px;
-            }
-
-            .legend {
-                bottom: 15px;
-                right: 15px;
-                padding: 12px;
-            }
-
-            .legend h3 {
-                font-size: 12px;
-            }
-
-            .legend-item {
-                font-size: 11px;
-            }
-
-            .popup-title {
-                font-size: 14px;
-            }
-        }
-
-        /* ランドスケープモード（横向き）対応 */
-        @media (max-height: 500px) and (orientation: landscape) {
-            .header {
-                padding: 12px 20px;
-            }
-
-            .header h1 {
-                font-size: 16px;
-                margin-bottom: 2px;
-            }
-
-            .header p {
-                font-size: 11px;
-            }
-
-            .legend {
-                bottom: 10px;
-                right: 10px;
-                padding: 10px;
-                font-size: 11px;
-            }
-
-            .legend h3 {
-                font-size: 11px;
-                margin-bottom: 6px;
-            }
-
-            .legend-item {
-                font-size: 10px;
-                margin-bottom: 4px;
-            }
-
-            .legend-color {
-                width: 12px;
-                height: 12px;
-                margin-right: 6px;
             }
         }
     </style>
@@ -669,7 +511,6 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // イベントカテゴリの定義
         const categories = {
             all: 'すべて',
             conflict: '武力紛争',
@@ -693,15 +534,13 @@
             low: '低'
         };
 
-        // バックエンドAPIからニュースを取得
         async function fetchGDELTEvents() {
             try {
                 console.log('📡 Fetching news from backend server...');
                 
-                // ローカル開発環境ではlocalhost、本番ではVercel等のURL
                 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
                     ? 'http://localhost:3000/api/events'
-                    : '/api/events'; // 本番環境（Vercel Functions等）
+                    : '/api/events';
                 
                 console.log(`🔗 API URL: ${API_URL}`);
                 
@@ -725,16 +564,14 @@
                 console.error('❌ Error fetching from backend:', error);
                 console.error('💡 Make sure backend server is running on http://localhost:3000');
                 console.error('   Run: npm install && npm start');
-                return []; // エラー時は空配列
+                return [];
             }
         }
         
-        // 日付を相対的な表記に変換（例: "今日", "1日前", "2026-02-10"）
         function formatRelativeDate(dateString) {
             const eventDate = new Date(dateString);
             const today = new Date();
             
-            // 時刻を00:00:00にリセットして日数計算
             eventDate.setHours(0, 0, 0, 0);
             today.setHours(0, 0, 0, 0);
             
@@ -747,7 +584,6 @@
             if (diffDays === 3) return '3日前';
             if (diffDays <= 7) return `${diffDays}日前`;
             
-            // 7日以上前は日付そのまま
             return dateString;
         }
 
@@ -760,19 +596,16 @@
             const [loading, setLoading] = useState(false);
             const [categoryFilter, setCategoryFilter] = useState('all');
             const [severityFilter, setSeverityFilter] = useState('all');
-            const [legendCollapsed, setLegendCollapsed] = useState(true); // モバイルではデフォルトで閉じる
+            const [legendCollapsed, setLegendCollapsed] = useState(true);
 
-            // フィルタリングされたイベント
             const filteredEvents = events.filter(event => {
                 const categoryMatch = categoryFilter === 'all' || event.category === categoryFilter;
                 const severityMatch = severityFilter === 'all' || event.severity === severityFilter;
                 return categoryMatch && severityMatch;
             });
 
-            // 過去のイベントを蓄積（最大20件）
             const eventHistory = useRef([]);
             
-            // イベントデータを取得
             const loadEvents = async () => {
                 setLoading(true);
                 console.log('Loading events...');
@@ -780,7 +613,6 @@
                     const newData = await fetchGDELTEvents();
                     console.log('New events loaded:', newData.length, 'events');
                     
-                    // 新しいイベントを履歴に追加（タイトル+URLで重複を避ける）
                     const existingKeys = new Set(
                         eventHistory.current.map(e => `${e.title}-${e.articleUrl}`)
                     );
@@ -790,17 +622,14 @@
                     
                     console.log(`🆕 New unique events: ${uniqueNewEvents.length}`);
                     
-                    // 履歴を更新（新しいイベントを先頭に追加）
                     eventHistory.current = [...uniqueNewEvents, ...eventHistory.current];
                     
-                    // 最大20件に制限
                     if (eventHistory.current.length > 20) {
                         const removed = eventHistory.current.length - 20;
                         eventHistory.current = eventHistory.current.slice(0, 20);
                         console.log(`🗑️ Removed ${removed} old events`);
                     }
                     
-                    // IDを再採番（履歴全体で一意にする）
                     eventHistory.current = eventHistory.current.map((event, index) => ({
                         ...event,
                         id: index + 1
@@ -809,11 +638,9 @@
                     console.log(`📚 Total events in history: ${eventHistory.current.length}`);
                     console.log(`🗺️ Displaying all ${eventHistory.current.length} events on map`);
                     
-                    // 履歴の全イベントを表示
                     setEvents(eventHistory.current);
                 } catch (error) {
                     console.error('イベントの取得に失敗しました:', error);
-                    // エラー時も既存の履歴は保持
                     if (eventHistory.current.length > 0) {
                         console.log(`📋 Keeping existing ${eventHistory.current.length} events`);
                         setEvents(eventHistory.current);
@@ -826,7 +653,6 @@
             useEffect(() => {
                 if (map.current) return;
 
-                // Mapboxアクセストークン
                 mapboxgl.accessToken = window.MAPBOX_TOKEN || 'pk.eyJ1IjoieXV1czI0IiwiYSI6ImNtbGpkNnZndzBjc3kzZ29kcGJieGM1amwifQ.D_MBoSrs0EYhqk13xiRBxg';
 
                 map.current = new mapboxgl.Map({
@@ -834,7 +660,7 @@
                     style: 'mapbox://styles/mapbox/dark-v11',
                     center: [40, 25],
                     zoom: window.innerWidth < 768 ? 1.8 : 2.2,
-                    projection: 'globe', // 地球儀に戻す
+                    projection: 'globe',
                     attributionControl: false,
                     dragRotate: false,
                     touchZoomRotate: true,
@@ -860,7 +686,6 @@
                         visualizePitch: false
                     }), 'top-right');
                     
-                    // 地球儀の霧効果を戻す
                     map.current.setFog({
                         color: 'rgb(186, 210, 235)',
                         'high-color': 'rgb(36, 92, 223)',
@@ -869,7 +694,6 @@
                         'star-intensity': 0.6
                     });
                     
-                    // ドラッグの慣性を強化
                     map.current.dragPan.enable({
                         linearity: 0.3,
                         easing: t => t * (2 - t),
@@ -877,14 +701,12 @@
                         deceleration: 2500
                     });
                     
-                    // カスタムホイールハンドラー
                     const mapElement = mapContainer.current;
                     mapElement.addEventListener('wheel', (e) => {
-                        // ctrlKey（Macでは⌘）が押されている、またはピンチジェスチャーの場合はズーム
                         if (e.ctrlKey || e.metaKey) {
                             e.preventDefault();
                             const zoom = map.current.getZoom();
-                            const delta = -e.deltaY / 100; // ズーム量を調整
+                            const delta = -e.deltaY / 100;
                             map.current.zoomTo(zoom + delta, {
                                 duration: 0
                             });
@@ -895,11 +717,7 @@
                         
                         const center = map.current.getCenter();
                         const zoom = map.current.getZoom();
-                        
-                        // スクロール量に基づいて移動距離を計算
                         const panFactor = 0.5 / Math.pow(2, zoom);
-                        
-                        // 縦スクロール（主）と横スクロール（Shift押下時）に対応
                         const deltaX = e.shiftKey ? e.deltaY * panFactor : e.deltaX * panFactor;
                         const deltaY = e.shiftKey ? 0 : e.deltaY * panFactor;
                         
@@ -911,18 +729,15 @@
                         });
                     }, { passive: false });
                     
-                    // 初回イベント読み込み
                     loadEvents();
                     
                     console.log('Map loaded, loading events...');
                     
-                    // 15分ごとに自動更新
                     const autoRefreshInterval = setInterval(() => {
                         console.log('🔄 Auto-refreshing events (every 15 minutes)...');
                         loadEvents();
-                    }, 15 * 60 * 1000); // 15分 = 900,000ミリ秒
+                    }, 15 * 60 * 1000);
                     
-                    // クリーンアップ時に間隔タイマーをクリア
                     return () => clearInterval(autoRefreshInterval);
                 });
 
@@ -933,24 +748,34 @@
                 };
             }, []);
 
-            // フィルター変更時にマーカーを更新
             useEffect(() => {
                 if (!loaded || !map.current) return;
 
                 console.log('Updating markers. Filtered events:', filteredEvents.length);
 
-                // 既存のマーカーをクリア
                 markers.current.forEach(marker => marker.remove());
                 markers.current = [];
 
-                // フィルタリングされたイベントにマーカーを追加
                 filteredEvents.forEach(event => {
                     console.log('Creating marker for:', event.title, 'at [lng:', event.lng, ', lat:', event.lat, ']');
                     
-                    // マーカー要素を作成
+                    // マーカー座標の重複を解決（少しずらす）
+                    const existingMarkers = markers.current.filter(m => {
+                        const pos = m.getLngLat();
+                        return Math.abs(pos.lng - event.lng) < 0.01 && Math.abs(pos.lat - event.lat) < 0.01;
+                    });
+
+                    let adjustedLng = event.lng;
+                    let adjustedLat = event.lat;
+                    if (existingMarkers.length > 0) {
+                        const offset = existingMarkers.length * 0.05;
+                        adjustedLng += offset * Math.cos(existingMarkers.length);
+                        adjustedLat += offset * Math.sin(existingMarkers.length);
+                        console.log(`  📍 Adjusted position to avoid overlap: [${adjustedLng}, ${adjustedLat}]`);
+                    }
+                    
                     const el = document.createElement('div');
                     
-                    // 適切なマーカーサイズ
                     const isMobile = window.innerWidth < 768;
                     const criticalSize = isMobile ? 32 : 28;
                     const normalSize = isMobile ? 26 : 22;
@@ -969,7 +794,6 @@
                     
                     console.log('Marker element created with size:', size);
 
-                    // ポップアップを作成（レスポンシブ対応）
                     const popup = new mapboxgl.Popup({ 
                         offset: 30,
                         closeButton: true,
@@ -997,10 +821,9 @@
                         ` : ''}
                     `);
 
-                    // Mapboxマーカーを作成
                     try {
                         const marker = new mapboxgl.Marker(el)
-                            .setLngLat([event.lng, event.lat])
+                            .setLngLat([adjustedLng, adjustedLat])
                             .setPopup(popup)
                             .addTo(map.current);
 
