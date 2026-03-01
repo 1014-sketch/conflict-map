@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
 
-// RSSフィードソース（拡充 - 5ソース）
+// RSSフィードソース
 const RSS_SOURCES = [
     { name: 'Al Jazeera', url: 'https://www.aljazeera.com/xml/rss/all.xml' },
     { name: 'BBC World', url: 'https://feeds.bbci.co.uk/news/world/rss.xml' },
@@ -22,7 +22,7 @@ const RSS_SOURCES = [
     { name: 'ABC News', url: 'https://abcnews.go.com/abcnews/internationalheadlines' }
 ];
 
-// 位置情報マッピング（大幅拡充 - 150+地点）
+// 位置情報マッピング
 const LOCATIONS = {
     // ヨーロッパ
     'Ukraine': { lat: 48.3794, lng: 31.1656 },
@@ -184,59 +184,56 @@ const LOCATIONS = {
     'Auckland': { lat: -36.8485, lng: 174.7633 }
 };
 
-// 紛争関連キーワード（大幅拡充 - 100+個）
+// 紛争関連キーワード
 const CONFLICT_KEYWORDS = [
-    // 戦争・武力紛争
     'war', 'warfare', 'conflict', 'battle', 'combat', 'fighting', 'clashes',
     'hostilities', 'confrontation', 'armed conflict', 'armed', 'skirmish',
-    
-    // 攻撃・暴力
     'attack', 'attacks', 'attacked', 'assault', 'raid', 'offensive', 
     'strike', 'strikes', 'bombing', 'airstrike', 'airstrikes', 'shelling', 
     'gunfire', 'shooting', 'shot', 'missile', 'missiles', 'rocket', 'rockets',
     'explosion', 'blast', 'fire', 'artillery', 'drone strike', 'ambush',
-    
-    // 死傷・犠牲
     'killed', 'kill', 'killing', 'death', 'deaths', 'dead', 'die', 'died',
     'casualties', 'casualty', 'fatalities', 'wounded', 'injured', 'hurt',
     'victims', 'toll', 'massacre', 'slaughter', 'genocide', 'ethnic cleansing',
     'mass killing', 'execution', 'executed', 'assassinated', 'murdered',
-    
-    // 軍事・武装勢力
     'military', 'troops', 'soldiers', 'forces', 'army', 'militia',
     'rebels', 'insurgents', 'fighters', 'guerrilla', 'combatants',
     'terrorists', 'terrorism', 'extremist', 'extremists', 'militant', 'militants',
     'paramilitary', 'armed forces', 'armed groups',
-    
-    // 暴力・治安
     'violence', 'violent', 'unrest', 'turmoil', 'instability',
     'chaos', 'bloodshed', 'brutality', 'atrocities', 'crackdown',
-    
-    // 抗議・デモ
     'protest', 'protests', 'protester', 'protesters', 'demonstration', 
     'demonstrations', 'rally', 'uprising', 'riot', 'riots', 'civil unrest',
-    'unrest', 'dissent',
-    
-    // 危機・緊張
     'crisis', 'emergency', 'tension', 'tensions', 'standoff',
     'dispute', 'escalation', 'escalate', 'threat', 'threatens',
-    
-    // クーデター・政変
     'coup', 'overthrow', 'regime change', 'revolution', 'rebellion',
     'insurgency', 'mutiny', 'revolt',
-    
-    // 包囲・侵略
     'siege', 'blockade', 'invasion', 'invade', 'occupation', 'occupy',
-    'incursion', 'aggression', 'offensive',
-    
-    // 人道危機
+    'incursion', 'aggression',
     'humanitarian', 'refugee', 'refugees', 'displaced', 'evacuation',
     'evacuate', 'famine', 'starvation', 'aid', 'relief', 'shelter'
 ];
 
-// 深刻度判定（スコアリング方式）
+// 主要国リスト（国家間紛争検出用）
+const MAJOR_COUNTRIES = [
+    'israel', 'iran', 'russia', 'ukraine', 'china', 'taiwan', 
+    'usa', 'united states', 'north korea', 'south korea',
+    'india', 'pakistan', 'syria', 'turkey', 'saudi arabia'
+];
+
+// 深刻度判定（改善版）
 function calculateSeverity(content) {
     let score = 0;
+    
+    // 🚫 除外: 式典・記念行事
+    if (content.match(/memorial|ceremony|anniversary|commemorate|remembrance|tribute|honor|marks|marked|observ/)) {
+        return null; // 除外
+    }
+    
+    // 🚫 除外: 歴史的事件（年号や過去の表現）
+    if (content.match(/\d{4}|years? ago|decades? ago|century|historic|history/)) {
+        return null; // 除外
+    }
     
     // 死傷者数
     const deathMatch = content.match(/(\d+)\s*(killed|dead|death|casualties|fatalities|wounded|injured)/);
@@ -250,18 +247,31 @@ function calculateSeverity(content) {
         else score += 2;
     }
     
+    // 🔥 国家間紛争検出（新規）
+    let countryCount = 0;
+    MAJOR_COUNTRIES.forEach(country => {
+        if (content.includes(country)) countryCount++;
+    });
+    
+    // 2カ国以上言及 + 軍事行動 = 国際紛争
+    if (countryCount >= 2 && content.match(/strike|attack|invade|bomb|war|conflict/)) {
+        score += 6; // 国際紛争ボーナス（大幅増）
+    }
+    
     // 重大キーワード
     if (content.match(/massacre|genocide|ethnic cleansing|mass killing|slaughter/)) score += 3;
+    if (content.match(/nuclear|atomic/)) score += 5; // 核兵器
     if (content.match(/bombing|airstrike|missile|rocket|explosion/)) score += 2;
     if (content.match(/civilian|children|hospital|school|refugee/)) score += 2;
-    if (content.match(/attack|assault|raid|strike/)) score += 1;
+    if (content.match(/attack|assault|raid/)) score += 1;
     if (content.match(/coup|overthrow|revolution/)) score += 5;
-    if (content.match(/famine|starvation|crisis/)) score += 4;
+    if (content.match(/famine|starvation/)) score += 4;
     if (content.match(/war|warfare|combat|battle/)) score += 2;
     
+    // 深刻度を決定（厳格化）
     if (score >= 8) return 'critical';
-    if (score >= 4) return 'high';
-    if (score >= 2) return 'medium';
+    if (score >= 5) return 'high';      // 5点から高（厳格化）
+    if (score >= 3) return 'medium';    // 3点から中（厳格化）
     return 'low';
 }
 
@@ -338,11 +348,21 @@ app.get('/api/events', async (req, res) => {
         console.log(`📰 Total: ${allArticles.length} articles from ${successfulSources} sources`);
         
         const events = [];
+        let filteredByMemorial = 0;
+        let filteredByHistory = 0;
+        let filteredByKeyword = 0;
+        let filteredByLocation = 0;
+        
         allArticles.forEach(article => {
             const content = (article.title + ' ' + article.description).toLowerCase();
             
-            if (!CONFLICT_KEYWORDS.some(kw => content.includes(kw))) return;
+            // キーワードフィルター
+            if (!CONFLICT_KEYWORDS.some(kw => content.includes(kw))) {
+                filteredByKeyword++;
+                return;
+            }
             
+            // 位置情報抽出
             let locationName = null, coords = null;
             for (const [loc, coord] of Object.entries(LOCATIONS)) {
                 if (content.includes(loc.toLowerCase())) {
@@ -352,7 +372,21 @@ app.get('/api/events', async (req, res) => {
                 }
             }
             
-            if (!coords) return;
+            if (!coords) {
+                filteredByLocation++;
+                return;
+            }
+            
+            // 深刻度判定（式典・歴史的事件は null が返る）
+            const severity = calculateSeverity(content);
+            if (severity === null) {
+                if (content.match(/memorial|ceremony|anniversary/)) {
+                    filteredByMemorial++;
+                } else {
+                    filteredByHistory++;
+                }
+                return; // 除外
+            }
             
             events.push({
                 id: events.length + 1,
@@ -360,7 +394,7 @@ app.get('/api/events', async (req, res) => {
                 location: locationName,
                 lat: coords.lat,
                 lng: coords.lng,
-                severity: calculateSeverity(content),
+                severity: severity,
                 description: article.description.replace(/<[^>]*>/g, '').substring(0, 200),
                 date: article.pubDate ? new Date(article.pubDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
                 category: determineCategory(content),
@@ -370,7 +404,15 @@ app.get('/api/events', async (req, res) => {
             });
         });
         
-        console.log(`🌍 Processed ${events.length} conflict events`);
+        console.log(`\n📊 Filtering Summary:`);
+        console.log(`   Total articles: ${allArticles.length}`);
+        console.log(`   ❌ No conflict keywords: ${filteredByKeyword}`);
+        console.log(`   ❌ No location: ${filteredByLocation}`);
+        console.log(`   ❌ Memorial/ceremony: ${filteredByMemorial}`);
+        console.log(`   ❌ Historical event: ${filteredByHistory}`);
+        console.log(`   ✅ Valid events: ${events.length}`);
+        console.log(`🌍 Processed ${events.length} conflict events\n`);
+        
         res.json({ success: true, count: events.length, events, lastUpdated: new Date().toISOString() });
         
     } catch (error) {
